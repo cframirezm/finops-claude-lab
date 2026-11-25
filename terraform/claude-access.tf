@@ -55,18 +55,28 @@ data "aws_iam_policy_document" "claude_guardrails" {
     resources = ["*"]
   }
 
-  # Candado 2: cualquier acción que no sea de lectura queda denegada,
-  # aunque mañana alguien le agregue otra política al rol.
+  # Candado 2: lista blanca. Todo lo que no sea LEER en estos servicios
+  # queda denegado, aunque mañana alguien le agregue otra política al rol.
+  # (IAM no acepta comodines en el servicio, así que se nombra cada uno.)
   statement {
     sid    = "DenyAnythingNotRead"
     effect = "Deny"
     not_actions = [
-      "*:Describe*",
-      "*:Get*",
-      "*:List*",
-      "*:BatchGet*",
-      "*:Search*",
-      "*:Lookup*",
+      "ec2:Describe*",
+      "ecs:Describe*", "ecs:List*",
+      "elasticloadbalancing:Describe*",
+      "logs:Describe*", "logs:ListTagsForResource", "logs:ListTagsLogGroup",
+      "ecr:Describe*", "ecr:GetLifecyclePolicy", "ecr:ListTagsForResource",
+      "lambda:List*", "lambda:GetFunctionConfiguration", "lambda:GetAccountSettings",
+      "s3:ListAllMyBuckets", "s3:ListBucket", "s3:ListBucketMultipartUploads", "s3:GetLifecycleConfiguration", "s3:GetBucketLocation", "s3:GetBucketTagging",
+      "cloudwatch:Describe*", "cloudwatch:Get*", "cloudwatch:List*",
+      "ce:Get*", "ce:Describe*", "ce:List*",
+      "cost-optimization-hub:Get*", "cost-optimization-hub:List*",
+      "compute-optimizer:Get*", "compute-optimizer:Describe*",
+      "budgets:View*", "budgets:Describe*",
+      "pricing:*",
+      "tag:Get*",
+      "cloudtrail:LookupEvents",
       "sts:GetCallerIdentity",
     ]
     resources = ["*"]

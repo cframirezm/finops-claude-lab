@@ -8,18 +8,21 @@ Siembra desperdicio típico en una cuenta AWS de pruebas, lo detecta de dos form
 
 ## Qué se siembra
 
+Desperdicio de una plataforma DevOps moderna: contenedores, serverless y pipelines.
+
 | Desperdicio | Recurso | Playbook del conector Cloud FinOps |
 |---|---|---|
-| Disco huérfano | EBS de 20 GB sin instancia | `aws-orphaned-ebs-volumes` |
-| gp2 en vez de gp3 | EBS gp2 de 10 GB | `aws-gp2-to-gp3` |
-| Snapshots acumulados | 3 snapshots del disco huérfano | `aws-snapshot-sprawl` |
-| **La trampa** | Snapshot `billing-db-final-backup` con retención legal | `aws-snapshot-sprawl` |
+| Entorno de preview olvidado | ECS Fargate `preview-pr-142` (PR cerrado), encendido 24/7 | schedule blindness |
+| **La trampa** | ECS Fargate `preview-pr-151`, con `DoNotDelete-until` y `Owner=qa` | — |
+| Balanceador sin destinos | ALB `legacy-api-alb` con 0 targets | `aws-idle-load-balancer` |
+| Logs que nunca expiran | 3 grupos de CloudWatch Logs sin retención | — |
+| Imágenes acumuladas | Repositorio ECR sin política de ciclo de vida | — |
+| Lambda sobredimensionada | `thumbnail-resizer` con 3 GB de memoria | — |
 | IP pública sin usar | Elastic IP sin asociar | — |
-| Instancia ociosa | t3.micro encendida sin carga | — |
-| Bucket sin ciclo de vida | S3 con logs y cargas multiparte incompletas | `aws-s3-incomplete-multipart-uploads` |
-| NAT zombi (opcional) | NAT Gateway sin tráfico | `aws-zombie-nat-gateway` |
+| Artefactos sin ciclo de vida | S3 con cargas multiparte incompletas | `aws-s3-incomplete-multipart-uploads` |
+| NAT para descargar imágenes (opcional) | NAT Gateway | `aws-nat-gateway-endpoint-substitution` |
 
-Costo aproximado: 1 a 2 USD por día. Con `enable_nat=true`, unos 1 USD por día más.
+Costo aproximado: 2 a 3 USD por día (ALB y Fargate). Con `enable_nat=true`, unos 1 USD por día más.
 
 ## Cómo se usa
 

@@ -64,6 +64,20 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+# Segunda subred pública: un ALB necesita dos zonas de disponibilidad
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.lab.id
+  cidr_block              = "10.30.3.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = true
+  tags                    = { Name = "finops-lab-public-b" }
+}
+
+resource "aws_route_table_association" "public_b" {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
+}
+
 resource "aws_security_group" "egress_only" {
   name        = "finops-lab-egress-only"
   description = "Sin entrada; solo salida"

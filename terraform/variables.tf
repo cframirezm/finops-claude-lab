@@ -21,8 +21,3 @@ variable "detection_schedule" {
   default     = "cron(0 13 * * ? *)"
 }
 
-variable "snapshot_age_days" {
-  description = "Edad a partir de la cual un snapshot se considera candidato"
-  type        = number
-  default     = 0
-}

@@ -1,31 +1,40 @@
 #!/usr/bin/env bash
-# Detección manual, de solo lectura. Corre en CloudShell y pégale la salida a Claude.
+# Plan B de la demo: detección manual de solo lectura.
+# Corre en CloudShell y pégale la salida a Claude si el MCP falla.
 set -uo pipefail
 R=${AWS_REGION:-us-east-1}
-echo "== Discos sin instancia =="
-aws ec2 describe-volumes --region "$R" --filters Name=status,Values=available \
-  --query 'Volumes[].{id:VolumeId,gb:Size,tipo:VolumeType,tags:Tags}' --output json
-echo "== Discos gp2 =="
-aws ec2 describe-volumes --region "$R" --filters Name=volume-type,Values=gp2 \
-  --query 'Volumes[].{id:VolumeId,gb:Size,estado:State}' --output table
-echo "== Snapshots propios =="
-aws ec2 describe-snapshots --region "$R" --owner-ids self \
-  --query 'Snapshots[].{id:SnapshotId,gb:VolumeSize,fecha:StartTime,tags:Tags}' --output json
+echo "== Servicios ECS de preview encendidos =="
+for c in $(aws ecs list-clusters --region "$R" --query 'clusterArns[]' --output text); do
+  s=$(aws ecs list-services --region "$R" --cluster "$c" --query 'serviceArns[]' --output text)
+  [ -z "$s" ] && continue
+  aws ecs describe-services --region "$R" --cluster "$c" --services $s --include TAGS \
+    --query 'services[].{servicio:serviceName,corriendo:runningCount,tags:tags}' --output json
+done
+echo "== Balanceadores y cuántos destinos tienen =="
+for lb in $(aws elbv2 describe-load-balancers --region "$R" --query 'LoadBalancers[].LoadBalancerArn' --output text); do
+  n=0
+  for tg in $(aws elbv2 describe-target-groups --region "$R" --load-balancer-arn "$lb" --query 'TargetGroups[].TargetGroupArn' --output text); do
+    n=$((n + $(aws elbv2 describe-target-health --region "$R" --target-group-arn "$tg" --query 'length(TargetHealthDescriptions)' --output text)))
+  done
+  echo "$(basename "$lb")  destinos: $n"
+done
+echo "== Grupos de logs sin retención =="
+aws logs describe-log-groups --region "$R" \
+  --query 'logGroups[?retentionInDays==null].{grupo:logGroupName,bytes:storedBytes}' --output table
+echo "== Repositorios ECR y su política de ciclo de vida =="
+for r in $(aws ecr describe-repositories --region "$R" --query 'repositories[].repositoryName' --output text); do
+  aws ecr get-lifecycle-policy --region "$R" --repository-name "$r" >/dev/null 2>&1 && lc="sí" || lc="NO"
+  echo "$r  ciclo de vida: $lc"
+done
+echo "== Lambdas con 2 GB o más de memoria =="
+aws lambda list-functions --region "$R" \
+  --query 'Functions[?MemorySize>=`2048`].{funcion:FunctionName,mb:MemorySize}' --output table
 echo "== IPs públicas sin asociar =="
 aws ec2 describe-addresses --region "$R" \
   --query 'Addresses[?AssociationId==null].{ip:PublicIp,id:AllocationId}' --output table
 echo "== NAT Gateways activas =="
 aws ec2 describe-nat-gateways --region "$R" --filter Name=state,Values=available \
   --query 'NatGateways[].{id:NatGatewayId,subred:SubnetId}' --output table
-echo "== Instancias encendidas y su CPU promedio (7 días) =="
-for id in $(aws ec2 describe-instances --region "$R" --filters Name=instance-state-name,Values=running \
-  --query 'Reservations[].Instances[].InstanceId' --output text); do
-  cpu=$(aws cloudwatch get-metric-statistics --region "$R" --namespace AWS/EC2 --metric-name CPUUtilization \
-    --dimensions Name=InstanceId,Value="$id" --statistics Average --period 604800 \
-    --start-time "$(date -u -d '-7 days' +%FT%TZ)" --end-time "$(date -u +%FT%TZ)" \
-    --query 'Datapoints[0].Average' --output text)
-  echo "$id  CPU promedio: $cpu %"
-done
 echo "== Buckets: ciclo de vida y cargas incompletas =="
 for b in $(aws s3api list-buckets --query 'Buckets[].Name' --output text); do
   lc=$(aws s3api get-bucket-lifecycle-configuration --bucket "$b" >/dev/null 2>&1 && echo "sí" || echo "NO")

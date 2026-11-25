@@ -14,11 +14,11 @@ Adapta este documento a tu empresa y súbelo como conocimiento del proyecto.
 
 ## Qué necesita aprobación
 - Cualquier recurso de `prod`.
-- Snapshots con `Retention` o con nombre que diga backup, final o legal.
+- Recursos con `Retention`, `DoNotDelete` o `DoNotDelete-until` con fecha futura.
 - NAT Gateways y balanceadores: primero confirmar que nada depende de ellos.
 
 ## Recursos críticos conocidos (laboratorio)
-- `billing-db-final-backup`: único respaldo de la base de facturación 2025. Retención legal de 7 años. Owner: finanzas.
+- `preview-pr-151` (ECS, clúster previews): QA lo usa para validar el release de diciembre de 2026. Etiqueta `DoNotDelete-until: 2026-12-10`. Owner: qa.
 
 ## Cómo se aprueba un cambio
 Ticket en el sistema de cambios con: recurso, costo mensual, riesgo y plan de reversa.

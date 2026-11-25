@@ -38,21 +38,20 @@ data "aws_iam_policy_document" "detector" {
   statement {
     sid = "ReadOnly"
     actions = [
-      "ec2:DescribeVolumes",
-      "ec2:DescribeSnapshots",
-      "ec2:DescribeAddresses",
-      "ec2:DescribeInstances",
-      "ec2:DescribeNatGateways",
-      "cloudwatch:GetMetricStatistics",
-      "s3:ListAllMyBuckets",
-      "s3:GetLifecycleConfiguration",
-      "s3:ListBucketMultipartUploads",
+      "ecs:ListClusters", "ecs:ListServices", "ecs:DescribeServices", "ecs:DescribeTaskDefinition",
+      "elasticloadbalancing:DescribeLoadBalancers", "elasticloadbalancing:DescribeTargetGroups",
+      "elasticloadbalancing:DescribeTargetHealth", "elasticloadbalancing:DescribeTags",
+      "logs:DescribeLogGroups", "logs:ListTagsForResource",
+      "ecr:DescribeRepositories", "ecr:GetLifecyclePolicy", "ecr:ListTagsForResource",
+      "lambda:ListFunctions", "lambda:ListTags",
+      "ec2:DescribeAddresses", "ec2:DescribeNatGateways",
+      "s3:ListAllMyBuckets", "s3:GetLifecycleConfiguration", "s3:ListBucketMultipartUploads",
     ]
     resources = ["*"]
   }
   statement {
     sid       = "TagOnly"
-    actions   = ["ec2:CreateTags"]
+    actions   = ["tag:TagResources", "ec2:CreateTags", "ecs:TagResource", "elasticloadbalancing:AddTags", "logs:TagResource", "ecr:TagResource", "lambda:TagResource"]
     resources = ["*"]
     condition {
       test     = "ForAllValues:StringEquals"
@@ -88,7 +87,7 @@ resource "aws_lambda_function" "detector" {
   environment {
     variables = {
       TOPIC_ARN         = aws_sns_topic.report.arn
-      SNAPSHOT_AGE_DAYS = tostring(var.snapshot_age_days)
+      ACCOUNT_ID        = data.aws_caller_identity.current.account_id
     }
   }
 }
