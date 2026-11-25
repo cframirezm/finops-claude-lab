@@ -16,9 +16,9 @@ variable "enable_nat" {
 }
 
 variable "detection_schedule" {
-  description = "Cada cuánto corre la detección continua"
+  description = "Cada cuánto corre la detección continua (por defecto, una vez al día a las 13:00 UTC)"
   type        = string
-  default     = "rate(1 hour)"
+  default     = "cron(0 13 * * ? *)"
 }
 
 variable "snapshot_age_days" {

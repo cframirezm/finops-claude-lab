@@ -35,7 +35,7 @@ Detección manual con Claude:
 ../scripts/find-waste.sh     # solo lectura; pega la salida en tu proyecto de Claude
 ```
 
-Detección continua: la Lambda `finops-lab-detector` corre cada hora, etiqueta los candidatos con `finops:candidate=true` y manda el reporte por correo. **Nunca borra.** Los recursos con `Retention`, `DoNotDelete` o `LegalHold` aparecen como protegidos.
+Detección continua: la Lambda `finops-lab-detector` corre una vez al día, etiqueta los candidatos con `finops:candidate=true` y manda el reporte por correo. **Nunca borra.** Los recursos con `Retention`, `DoNotDelete` o `LegalHold` aparecen como protegidos.
 
 Al terminar:
 ```bash
